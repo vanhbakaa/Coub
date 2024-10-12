@@ -319,6 +319,8 @@ class Tapper:
             self.balance = 0
             for taskid in reward:
                 self.balance += taskid['points']
+                if taskid['id'] not in tasks.keys():
+                    continue
                 if tasks[taskid['id']]['repeatable'] is True:
                     self.last_create_time.update({
                         taskid['id']: taskid['created_at']
@@ -328,6 +330,9 @@ class Tapper:
                     self.completed_task_ids.append(taskid['id'])
             for taskid in reward:
                 self.balance += taskid['points']
+                if taskid['id'] not in tasks.keys():
+                    continue
+                
                 if tasks[taskid['id']]['repeatable'] is True:
                    if check_yesterday_time(self.last_create_time[taskid['id']]):
                        self.completed_task_ids.append(taskid['id'])
@@ -349,6 +354,8 @@ class Tapper:
             self.balance = 0
             for taskid in reward:
                 self.balance += taskid['points']
+                if taskid['id'] not in tasks.keys():
+                    continue
                 if tasks[taskid['id']]['repeatable'] is True:
                     self.last_create_time.update({
                         taskid['id']: taskid['created_at']
@@ -358,6 +365,8 @@ class Tapper:
                     self.completed_task_ids.append(taskid['id'])
             for taskid in reward:
                 self.balance += taskid['points']
+                if taskid['id'] not in tasks.keys():
+                    continue
                 if tasks[taskid['id']]['repeatable'] is True:
                     if check_yesterday_time(self.last_create_time[taskid['id']]):
                         self.completed_task_ids.append(taskid['id'])
