@@ -329,7 +329,6 @@ class Tapper:
                 if taskid not in self.completed_task_ids:
                     self.completed_task_ids.append(taskid['id'])
             for taskid in reward:
-                self.balance += taskid['points']
                 if taskid['id'] not in tasks.keys():
                     continue
                 
@@ -364,7 +363,6 @@ class Tapper:
                 if taskid not in self.completed_task_ids:
                     self.completed_task_ids.append(taskid['id'])
             for taskid in reward:
-                self.balance += taskid['points']
                 if taskid['id'] not in tasks.keys():
                     continue
                 if tasks[taskid['id']]['repeatable'] is True:
