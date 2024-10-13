@@ -13,9 +13,9 @@
 | Proxy binding to session                                      |        ✅        |
 | AUto tasks                                                    |        ✅        |
 | Auto checkin                                                  |        ✅        |
-| Auto like/watch/share video (will add next update)            |        ✖️        |
+| Auto like/watch/share video (will add next update)            |         ✅       |
 | Auto-REF                                                      |        ✅        |
-| Support for tdata / pyrogram .session / telethon .session     |        ✅        |
+| Support for pyrogram .session                                |        ✅        |
 
 
 ## [Settings](https://github.com/vanhbakaa/Cexio-Tap-bot/blob/main/.env-example)
