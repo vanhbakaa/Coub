@@ -196,28 +196,6 @@ class Tapper:
         else:
             return None
 
-    async def join_channel(self):
-        try:
-            logger.info(f"{self.session_name} | Joining TG channel...")
-            if not self.tg_client.is_connected:
-                try:
-                    await self.tg_client.connect()
-                except (Unauthorized, UserDeactivated, AuthKeyUnregistered):
-                    raise InvalidSession(self.session_name)
-            try:
-                await self.tg_client.join_chat("coubnews")
-                logger.success(f"{self.session_name} | <green>Joined channel successfully</green>")
-            except Exception as e:
-                logger.error(f"{self.session_name} | <red>Join TG channel failed - Error: {e}</red>")
-
-            if self.tg_client.is_connected:
-                await self.tg_client.disconnect()
-
-        except Exception as error:
-            logger.error(f"<light-yellow>{self.session_name}</light-yellow> | Unknown error during Authorization: "
-                         f"{error}")
-            await asyncio.sleep(delay=3)
-
     def signup(self, session: requests.Session):
         payload = {
             "user": self.user_data,
@@ -316,11 +294,10 @@ class Tapper:
         res = session.get("https://rewards.coub.com/api/v2/get_user_rewards", headers=temp_headers)
         if res.status_code == 200:
             reward = res.json()
+            # print(reward)
             self.balance = 0
             for taskid in reward:
                 self.balance += taskid['points']
-                if taskid['id'] not in tasks.keys():
-                    continue
                 if tasks[taskid['id']]['repeatable'] is True:
                     self.last_create_time.update({
                         taskid['id']: taskid['created_at']
@@ -329,9 +306,7 @@ class Tapper:
                 if taskid not in self.completed_task_ids:
                     self.completed_task_ids.append(taskid['id'])
             for taskid in reward:
-                if taskid['id'] not in tasks.keys():
-                    continue
-                
+                self.balance += taskid['points']
                 if tasks[taskid['id']]['repeatable'] is True:
                    if check_yesterday_time(self.last_create_time[taskid['id']]):
                        self.completed_task_ids.append(taskid['id'])
@@ -350,11 +325,10 @@ class Tapper:
         res = session.get("https://rewards.coub.com/api/v2/get_user_rewards", headers=temp_headers)
         if res.status_code == 200:
             reward = res.json()
+            # print(reward)
             self.balance = 0
             for taskid in reward:
                 self.balance += taskid['points']
-                if taskid['id'] not in tasks.keys():
-                    continue
                 if tasks[taskid['id']]['repeatable'] is True:
                     self.last_create_time.update({
                         taskid['id']: taskid['created_at']
@@ -363,8 +337,7 @@ class Tapper:
                 if taskid not in self.completed_task_ids:
                     self.completed_task_ids.append(taskid['id'])
             for taskid in reward:
-                if taskid['id'] not in tasks.keys():
-                    continue
+                self.balance += taskid['points']
                 if tasks[taskid['id']]['repeatable'] is True:
                     if check_yesterday_time(self.last_create_time[taskid['id']]):
                         self.completed_task_ids.append(taskid['id'])
@@ -376,6 +349,8 @@ class Tapper:
             # return False
 
     def complete_ref_task(self, session: requests.Session):
+        if 1 in self.completed_task_ids:
+            return
         temp_headers = headers.copy()
         temp_headers['Referer'] = "https://coub.com/"
         temp_headers['Host'] = None
@@ -417,7 +392,7 @@ class Tapper:
         temp_headers['Referer'] = "https://coub.com/"
         temp_headers['Host'] = None
         for id in tasks.keys():
-            if id in self.completed_task_ids or tasks[id]['repeatable'] or tasks[id]['type'] == "watch" or tasks[id]['type'] == "share":
+            if id in self.completed_task_ids or tasks[id]['repeatable']:
                 continue
             res = session.get(f"https://rewards.coub.com/api/v2/complete_task?task_reward_id={id}", headers=temp_headers)
             if res.status_code == 200:
@@ -425,41 +400,9 @@ class Tapper:
                 self.get_lastest_user_rewards(session)
             else:
                 print(res.text)
-                logger.warning(f"{self.session_name} | <yellow>Failed to complete ref task: {res.status_code}</yellow>")
+                logger.warning(f"{self.session_name} | <yellow>Failed to complete task {tasks[id]['title']} - id: {id}: {res.status_code}</yellow>")
             await asyncio.sleep(random.uniform(3, 6))
                 # return False
-
-    def increase_views(self, videolink, video_title, temps_headers):
-        res = self.session1.post(f"https://coub.com/coubs/{videolink}/increment_views?player=html5&type=site&platform=desktop", headers=temps_headers)
-        if res.status_code == 200:
-            logger.success(f"{self.session_name} | <green>Successfully watch a video <blue>{video_title}</blue>.</green>")
-        else:
-            print(res.text)
-            logger.warning(f"{self.session_name} | <yellow>Failed to watch video: {res.status_code}</yellow>")
-
-
-    def like_video(self, id, type, name, temp_headers):
-        payload = {
-            "id": str(id),
-            "type": type,
-            "channel_id": str(self.channel_id)
-        }
-        print(temp_headers)
-
-        res = self.session1.post("https://coub.com/api/v2/likes", data=payload, headers=temp_headers)
-        if res.status_code == 200:
-            for cookie in res.cookies:
-                if cookie.name == "_cobb_session":
-                    # session.cookies.set(cookie.name, cookie.value)
-                    self.session1.cookies.set(cookie.name, cookie.value)
-            logger.success(f"{self.session_name} | <green>Successfully like video <cyan>{name}</cyan></green>")
-            return True
-        else:
-            print(res.text)
-            logger.warning(
-                f"{self.session_name} | <yellow>Failed to like video {name}: {res.status_code}</yellow>")
-            return False
-
 
     async def complete_repeat_tasks(self, session: requests.Session):
         temp_headers = headers.copy()
@@ -470,87 +413,18 @@ class Tapper:
                 continue
             if tasks[id]['repeatable'] is False:
                 continue
-            if id == 2:
-                res = session.get(f"https://rewards.coub.com/api/v2/complete_task?task_reward_id={id}",
+            res = session.get(f"https://rewards.coub.com/api/v2/complete_task?task_reward_id={id}",
                                   headers=temp_headers)
-                if res.status_code == 200:
-                    logger.success(
+            if res.status_code == 200:
+                logger.success(
                         f"{self.session_name} | <green>Successfully completed task <blue>{tasks[id]['title']}</blue></green>")
-                    self.get_lastest_user_rewards(session)
-                else:
-                    print(res.text)
-                    logger.warning(
-                        f"{self.session_name} | <yellow>Failed to complete ref task: {res.status_code}</yellow>")
-                await asyncio.sleep(random.uniform(3, 6))
-            elif tasks[id]['type'] == "watch" or tasks[id]['type'] == "share":
-                continue # will update soon
-            # elif tasks[id]['type'] == "like":
-            #     print(tasks[id])
-            #     if tasks[id]['title'] == "random":
-            #         url = "https://coub.com/telegram-mini-app/random?autoplay=1"
-            #         videos_url = "https://coub.com/api/v2/timeline/explore/random?page=1"
-            #     else:
-            #         url = "https://coub.com/telegram-mini-app/rising?autoplay=1"
-            #         videos_url = "https://coub.com/api/v2/timeline/subscriptions/rising?page=1"
-            #     xcsrf_token = self.get_xcsrf_token(url)
-            #     # print(xcsrf_token)
-            #     temp_headers2 = headers.copy()
-            #     temp_headers2['Authorization'] = None
-            #     temp_headers2['X-Tg-Authorization'] = None
-            #     temp_headers2['Referer'] = url
-            #     temp_headers2['Sec-Fetch-Dest'] = "empty"
-            #     temp_headers2['Sec-Fetch-Mode'] = "cors"
-            #     temp_headers2['Sec-Fetch-Site'] = "same-origin"
-            #     temp_headers2['X-Csrf-Token'] = xcsrf_token
-            #     temp_headers2['X-Requested-With'] = "XMLHttpRequest"
-            #
-            #     videos = self.session1.get(videos_url, headers=temp_headers2)
-            #
-            #     if videos.status_code == 200:
-            #         for cookie in videos.cookies:
-            #             self.session1.cookies.set(cookie.name, cookie.value)
-            #         videos_data = videos.json()
-            #         logger.info(f"{self.session_name} | Get videos data successfully!")
-            #         total_liked = 0
-            #         can_complete = False
-            #         for video in videos_data['coubs']:
-            #             if total_liked >= 5:
-            #                 can_complete = True
-            #                 break
-            #             print(video)
-            #             if video['like'] is False or video['like'] is None:
-            #                 logger.info(f'{self.session_name} | Attempt to watch video...')
-            #                 temp4 = temp_headers2.copy()
-            #                 self.increase_views(video['permalink'], video['title'] ,temp4)
-            #                 logger.info(f"{self.session_name} | Attempt to like video {video['title']}")
-            #                 temp3 = temp_headers2.copy()
-            #                 temp3['Content-Type'] = "application/x-www-form-urlencoded"
-            #                 del temp3['X-Tg-Authorization']
-            #                 del temp3['Authorization']
-            #                 temp3['Connection'] = "keep-alive"
-            #                 check = self.like_video(video['id'], 'coub', video['title'], temp3)
-            #                 if check:
-            #                     total_liked += 1
-            #                 await asyncio.sleep(random.uniform(3,5))
-            #         if can_complete:
-            #             temp_headers = headers.copy()
-            #             temp_headers['Referer'] = "https://coub.com/"
-            #             temp_headers['Host'] = None
-            #             res = session.get(f"https://rewards.coub.com/api/v2/complete_task?task_reward_id={id}",
-            #                               headers=temp_headers)
-            #             if res.status_code == 200:
-            #                 logger.success(
-            #                     f"{self.session_name} | <green>Successfully completed task <blue>{tasks[id]['title']}</blue></green>")
-            #                 self.get_lastest_user_rewards(session)
-            #             else:
-            #                 print(res.text)
-            #                 logger.warning(
-            #                     f"{self.session_name} | <yellow>Failed to complete ref task: {res.status_code}</yellow>")
-            #     else:
-            #         print(videos.text)
-            #         logger.warning(
-            #             f"{self.session_name} | <yellow>Failed to get videos data: {videos.status_code}</yellow>")
-            # await asyncio.sleep(random.uniform(3, 6))
+                self.get_lastest_user_rewards(session)
+            else:
+                print(res.text)
+                logger.warning(
+                        f"{self.session_name} | <yellow>Failed to complete task {tasks[id]['title']} - id: {id}: {res.status_code}</yellow>")
+            await asyncio.sleep(random.uniform(3, 6))
+
 
     async def run(self, proxy: str | None) -> None:
         access_token_created_time = 0
@@ -604,6 +478,7 @@ class Tapper:
                         self.get_user_rewards(session)
                         await asyncio.sleep(randint(2, 4))
                         self.get_ref_stats(session)
+                    session.cookies.clear_session_cookies()
 
 
                 if self.logged_in:
