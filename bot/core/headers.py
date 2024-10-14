@@ -1,7 +1,6 @@
 headers = {
     'Accept': '*/*',
     'Accept-Language': 'en-US',
-    "Host": "coub.com",
     'Origin': 'https://coub.com',
     'Referer': 'https://coub.com/tg-app/',
     'Sec-Fetch-Dest': 'empty',
